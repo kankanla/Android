@@ -1,6 +1,7 @@
 package com.kankanla.m0417b;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -27,6 +28,7 @@ public class PlayerService2 extends Service {
     public IBinder onBind(Intent intent) {
         return l_binder;
     }
+
 
     public class L_Binder extends Binder {
         PlayerService2 getServer() {
@@ -73,6 +75,8 @@ public class PlayerService2 extends Service {
                                     mp.setDataSource(getApplicationContext(), Filelist.remove(0));
                                     mp.prepare();
                                     mp.start();
+                                } else {
+                                    mp.stop();
                                 }
                             } catch (IOException e) {
                                 e.printStackTrace();
