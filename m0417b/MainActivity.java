@@ -31,17 +31,29 @@ public class MainActivity extends AppCompatActivity {
         startService(intent);
         bindService(intent, new con(), Context.BIND_AUTO_CREATE);
         fileSQL = new FileSQL(context);
-        add_Frag();
+        if (savedInstanceState == null) {
+//            add_Frag();
+            add_album_Frag();
+        }
     }
 
-    private void add_Frag() {
+    private void add_album_Frag(){
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        Item_list item_list = new Item_list();
-        fragmentTransaction.add(R.id.musiclist, item_list, "item_list");
+        Album_list album_list = new Album_list();
+        fragmentTransaction.add(R.id.musiclist, album_list ,"album_list");
         fragmentTransaction.commit();
     }
 
+//
+//
+//    private void add_Frag() {
+//        FragmentManager fragmentManager = getSupportFragmentManager();
+//        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+//        Item_list item_list = new Item_list();
+//        fragmentTransaction.add(R.id.musiclist, item_list, "item_list");
+//        fragmentTransaction.commit();
+//    }
 
     public void t1(View view) {
         Intent intent = new Intent();
@@ -72,7 +84,6 @@ public class MainActivity extends AppCompatActivity {
         }
         playerService2.player();
     }
-
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
