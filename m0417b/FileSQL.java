@@ -99,7 +99,7 @@ public class FileSQL {
     _display_name
      */
 
-    public boolean add_info_sound(Uri uri) {
+    public long add_info_sound(Uri uri) {
         String table_name = "info_sound";
         String table_key_uri = "document_uri";
         String table_key_name = "_display_name";
@@ -125,20 +125,29 @@ public class FileSQL {
                 break;
         }
 
-        long cont = 0;
+        long id = 0;
         if (contentValues.size() > 0) {
             SQLiteDatabase sqLiteDatabase = data_db.getWritableDatabase();
-            cont = sqLiteDatabase.insertWithOnConflict(table_name, null, contentValues, SQLiteDatabase.CONFLICT_IGNORE);
+            id = sqLiteDatabase.insertWithOnConflict(table_name, null, contentValues, SQLiteDatabase.CONFLICT_IGNORE);
             sqLiteDatabase.close();
         }
-
-        if (cont > 0) {
-            return true;
-        } else {
-            return false;
-        }
+        return id;
     }
 
+
+    public long get_info_sound_id(Uri uri) {
+        String table_name = "info_sound";
+        SQLiteDatabase sqLiteDatabase = data_db.getReadableDatabase();
+        Cursor cursor = sqLiteDatabase.query(table_name, new String[]{"*"}, "document_uri == ?", new String[]{uri.toString()}, null, null, null);
+
+        if (cursor.getCount() == 0) {
+            return add_info_sound(uri);
+        } else {
+            cursor.moveToFirst();
+            long id = cursor.getLong(cursor.getColumnIndex("_id"));
+            return id;
+        }
+    }
 
     public Cursor info_sound_all_quiry() {
         String table_name = "info_sound";
@@ -198,17 +207,35 @@ public class FileSQL {
     }
 
     /*
-
      */
     public Cursor get_album_id_item(String album_id) {
-        String table_name = "link_list";
+//        String table_name = "link_list";
+//        String table_name1 = "info_sound";
         SQLiteDatabase sqLiteDatabase = data_db.getReadableDatabase();
-        String selected = "album_list_id == ? ";
-        Cursor cursor = sqLiteDatabase.query(table_name, new String[]{"*"}, selected, new String[]{album_id}, null, null, null);
+//        String selected = "album_list_id == ? ";
+//        Cursor cursor = sqLiteDatabase.query(table_name, new String[]{"*"}, selected, new String[]{album_id}, null, null, null);
+//        SELECT カラム名 , ... FROM テーブル名 WHERE カラム NOT IN(SELECT カラム名 FROM テーブル名);
+        Cursor cursor = sqLiteDatabase.rawQuery("select * from info_sound where _id in(Select info_sound_id from link_list where album_list_id == ?  )", new String[]{album_id});
+
         if (cursor != null) {
             return cursor;
         } else {
             return null;
+        }
+    }
+
+    public boolean setAlbum_link_list(String album_list_id, String info_sound_id) {
+        String table_name = "link_list";
+        SQLiteDatabase sqLiteDatabase = data_db.getWritableDatabase();
+        ContentValues contentValues = new ContentValues();
+        contentValues.put("album_list_id", album_list_id);
+        contentValues.put("info_sound_id", info_sound_id);
+        long id = sqLiteDatabase.insertWithOnConflict(table_name, null, contentValues, SQLiteDatabase.CONFLICT_IGNORE);
+        sqLiteDatabase.close();
+        if (id > 0) {
+            return true;
+        } else {
+            return false;
         }
     }
 

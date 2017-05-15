@@ -2,10 +2,14 @@ package com.kankanla.m0417b;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -31,6 +35,10 @@ public class Item_list extends Fragment {
     private ListView listView;
     private FileSQL fileSQL;
     private String album_list_id;
+    private Cursor cursor;
+    private PlayerService2 playerService2;
+    private boolean flag;
+    private PlayerService2.L_Binder l_binder;
     private final int requestCode_ADDURL = 99;
     private final int requestCode_SETCOVER = 98;
 
@@ -42,7 +50,25 @@ public class Item_list extends Fragment {
     public void onAttach(Context context) {
         super.onAttach(context);
         System.out.println("Item_list--------------onAttach----------------");
+        Intent intent = new Intent(getContext(), PlayerService2.class);
+        getActivity().bindService(intent, new con(), Context.BIND_AUTO_CREATE);
     }
+
+    public class con implements ServiceConnection {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            l_binder = (PlayerService2.L_Binder) service;
+            playerService2 = l_binder.getServer();
+            flag = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
+        }
+    }
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -65,6 +91,7 @@ public class Item_list extends Fragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         System.out.println("Item_list--------------onActivityCreated----------------");
+
         listshow();
     }
 
@@ -115,7 +142,7 @@ public class Item_list extends Fragment {
 
     public void listshow() {
         fileSQL = new FileSQL(getActivity());
-        Cursor cursor = fileSQL.get_album_id_item(album_list_id);
+        cursor = fileSQL.get_album_id_item(album_list_id);
         Myapa myapa = new Myapa(cursor);
         listView.setAdapter(myapa);
     }
@@ -137,6 +164,27 @@ public class Item_list extends Fragment {
                 startActivityForResult(intent, requestCode_ADDURL);
             }
         });
+
+        button_play.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (cursor.getCount() > 0) {
+                    for (int l = 0; l < cursor.getCount(); l++) {
+                        cursor.moveToPosition(l);
+                        Uri u = Uri.parse(cursor.getString(cursor.getColumnIndex("document_uri")));
+                        System.out.println(u.toString());
+                        playerService2.addUri(u);
+                    }
+                }
+                try {
+                    Thread.sleep(20);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                playerService2.player();
+            }
+        });
+
     }
 
     @Override
@@ -145,7 +193,8 @@ public class Item_list extends Fragment {
         if (resultCode == Activity.RESULT_OK) {
             switch (requestCode) {
                 case requestCode_ADDURL:
-
+                    long id = fileSQL.get_info_sound_id(data.getData());
+                    fileSQL.setAlbum_link_list(album_list_id, String.valueOf(id));
                     break;
                 case requestCode_SETCOVER:
                     break;
@@ -154,13 +203,12 @@ public class Item_list extends Fragment {
     }
 
 
-    //
 //    Intent intent = new Intent();
 //        intent.setAction(Intent.ACTION_OPEN_DOCUMENT);
 //        intent.addCategory(Intent.CATEGORY_OPENABLE);
 //        intent.setType("audio/*");
-//    //        intent.setType(DocumentsContract.Document.MIME_TYPE_DIR);
-////        intent.setType("image/*");
+//        intent.setType(DocumentsContract.Document.MIME_TYPE_DIR);
+//        intent.setType("image/*");
 //    startActivityForResult(intent, 99);
 
 
@@ -190,20 +238,24 @@ public class Item_list extends Fragment {
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             View view;
-            if (convertView == null) {
-                view = getActivity().getLayoutInflater().inflate(R.layout.item_list, null);
-                cursor.moveToPosition(position);
-                TextView textView = (TextView) view.findViewById(R.id.ittess);
-                textView.setText(cursor.getString(cursor.getColumnIndex("_display_name")));
-                textView.setTextSize(22);
+            if (cursor != null) {
+                if (convertView == null) {
+                    view = getActivity().getLayoutInflater().inflate(R.layout.item_list, null);
+                    cursor.moveToPosition(position);
+                    TextView textView = (TextView) view.findViewById(R.id.ittess);
+                    textView.setText(cursor.getString(cursor.getColumnIndex("_display_name")));
+                    textView.setTextSize(22);
+                } else {
+                    view = convertView;
+                    cursor.moveToPosition(position);
+                    TextView textView = (TextView) view.findViewById(R.id.ittess);
+                    textView.setText(cursor.getString(cursor.getColumnIndex("_display_name")));
+                    textView.setTextSize(22);
+                }
+                return view;
             } else {
-                view = convertView;
-                cursor.moveToPosition(position);
-                TextView textView = (TextView) view.findViewById(R.id.ittess);
-                textView.setText(cursor.getString(cursor.getColumnIndex("_display_name")));
-                textView.setTextSize(22);
+                return null;
             }
-            return view;
         }
     }
 }
